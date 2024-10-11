@@ -58,7 +58,35 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+
+bool clamp_bool = true;
+bool arm_bool = true;
+bool hang_bool = true;
+
+std::shared_ptr<ChassisController> drive =
+    ChassisControllerBuilder()
+        .withMotors({-5, 6, -7, 8}, {1, -2, 3, -4})
+        // Green gearset, 4 in wheel diam, 11.5 in wheel track
+        .withDimensions(AbstractMotor::gearset::blue, {{10.9_in, 2.75_in}, imev5BlueTPR})
+		.withOdometry()
+        .buildOdometry();
+
+std::shared_ptr<AsyncVelocityController<double, double>> intakeController = 
+	AsyncVelControllerBuilder()
+	.withMotor(13)//intake motor
+	.build();
+
+pros::Controller controller(pros::E_CONTROLLER_MASTER);
+
+pros::ADIDigitalOut arm('C');
+pros::ADIDigitalOut clamp('B');
+pros::ADIDigitalOut hang('A');
+pros::Motor intake(13);
+
+void autonomous() 
+{
+	
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -73,21 +101,38 @@ void autonomous() {}
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
-void opcontrol() {
-	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::Motor left_mtr(1);
-	pros::Motor right_mtr(2);
-
-	while (true) {
+void opcontrol()
+{
+	while (true)
+	{
 		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
-		int left = master.get_analog(ANALOG_LEFT_Y);
-		int right = master.get_analog(ANALOG_RIGHT_Y);
+				(pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
+				(pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
 
-		left_mtr = left;
-		right_mtr = right;
+		drive->getModel()->arcade(controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0,
+					controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0);
 
-		pros::delay(20);
+		if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y))
+		{
+			clamp.set_value(clamp_bool);
+			clamp_bool = !clamp_bool;
+		}
+		if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT))
+		{
+			arm.set_value(arm_bool);
+			arm_bool = !arm_bool;
+		}
+		if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A))
+		{
+			hang.set_value(hang_bool);
+			hang_bool = !hang_bool;
+		}
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
+			intake.move_velocity(-600);
+		else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
+			intake.move_velocity(600);
+		else
+			intake.move_velocity(0);
+		pros::delay(10);
 	}
 }
