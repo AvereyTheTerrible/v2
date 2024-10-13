@@ -1,5 +1,8 @@
 #include "main.h"
 
+#define BASE_OFFSET 6.55_in
+#define GOAL_OFFSET 10.3_in
+#define RING_OFFSET 10.05_in
 /**
  * A callback function for LLEMU's center button.
  *
@@ -22,11 +25,50 @@ void on_center_button() {
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
+
+bool clamp_bool = true;
+bool arm_bool = true;
+bool hang_bool = true;
+
+std::shared_ptr<OdomChassisController> drive =
+    ChassisControllerBuilder()
+        .withMotors({-5, 6, -7, 8}, {1, -2, 3, -4})
+        // Green gearset, 4 in wheel diam, 11.5 in wheel track
+        .withDimensions(AbstractMotor::gearset::blue, {{10.9_in, 2.75_in}, imev5BlueTPR})
+		.withOdometry()
+        .buildOdometry();
+
+std::shared_ptr<AsyncVelocityController<double, double>> intakeController = 
+	AsyncVelControllerBuilder()
+	.withMotor(13)//intake motor
+	.build();
+
+pros::Controller controller(pros::E_CONTROLLER_MASTER);
+
+pros::ADIDigitalOut arm('C');
+pros::ADIDigitalOut clamp('B');
+pros::ADIDigitalOut hang('A');
+pros::Motor intake(13);
+
+void printOdom()
+{
+	while (true)
+	{
+		std::cout << drive->getState().str()<< '\n';
+		pros::delay(100);
+	}
+}
+
 void initialize() {
 	pros::lcd::initialize();
 	pros::lcd::set_text(1, "Hello PROS User!");
 
 	pros::lcd::register_btn1_cb(on_center_button);
+	
+
+	drive->setDefaultStateMode({StateMode::CARTESIAN});
+
+	pros::Task odom(printOdom);
 }
 
 /**
@@ -59,33 +101,68 @@ void competition_initialize() {}
  * from where it left off.
  */
 
-bool clamp_bool = true;
-bool arm_bool = true;
-bool hang_bool = true;
-
-std::shared_ptr<ChassisController> drive =
-    ChassisControllerBuilder()
-        .withMotors({-5, 6, -7, 8}, {1, -2, 3, -4})
-        // Green gearset, 4 in wheel diam, 11.5 in wheel track
-        .withDimensions(AbstractMotor::gearset::blue, {{10.9_in, 2.75_in}, imev5BlueTPR})
-		.withOdometry()
-        .buildOdometry();
-
-std::shared_ptr<AsyncVelocityController<double, double>> intakeController = 
-	AsyncVelControllerBuilder()
-	.withMotor(13)//intake motor
-	.build();
-
-pros::Controller controller(pros::E_CONTROLLER_MASTER);
-
-pros::ADIDigitalOut arm('C');
-pros::ADIDigitalOut clamp('B');
-pros::ADIDigitalOut hang('A');
-pros::Motor intake(13);
 
 void autonomous() 
 {
+	//chasing that bag or smth idk
+
+	//MAXIMIZE RINGZ PATH MAIN PERMUTATION
+	//setting initial position
+	drive->setState({30.5_in,18.25_in, 180_deg});
+	drive->driveToPoint({48_in, 48_in}, true, GOAL_OFFSET);
+	drive->waitUntilSettled();//ensuring we are in position to clamp mogo 
+	//CLAMP CODE TO GRAB-----------------------------------------------
+	//clamp->waitUntilSettled();//ensuring mogo is secured ------------
+	intakeController->controllerSet(1);//sets intake motor to full speed, scoring the pre-load.
+	drive->driveToPoint({27_in, 68.5_in}, false, RING_OFFSET);//intake and score
+	drive->driveToPoint({36_in, 60_in}, true, 0_in);//subject to change for optimization
+	drive->driveToPoint({24_in, 48_in}, false, RING_OFFSET);//intake and score
+	drive->driveToPoint({20.5_in, 68.5_in}, false, RING_OFFSET);//intake and score
+
+
+
+
+
+
+
+
+	//3RD MOGO RUSH MAIN PERMUTATION
+	//setting initial position
+	drive->setState({9.5_in,18.25_in, 180_deg});
+	//starting movement
+	drive->driveToPoint({9.5_in, 48_in}, true, 0_in);//NO OFFSET, this is just the end of the straight segment, no object is being manipulated
+	drive->driveToPoint({24_in, 72_in}, true, GOAL_OFFSET);//MUST BE REPLACED WITH A CURVE TO POINT-------------------
+	drive->waitUntilSettled();//ensuring we are in position to clamp mogo 
+	//CLAMP CODE TO GRAB-----------------------------------------------
+	//clamp->waitUntilSettled();//ensuring mogo is secured ------------
+	intakeController->controllerSet(1);//sets intake motor to full speed, scoring the pre-load.
+	drive->driveToPoint({24_in, 48_in}, false, RING_OFFSET);//intake and score
+	drive->driveToPoint({72_in, 24_in}, false, RING_OFFSET);//THIS PLACES THE BOT ON THE STACKED RINGs. WE NEED TO REPLACE THIS LINE WITH SOMETHING TO SCORE THE TOP RING
+	//drive->driveToPoint({--_in, --_in}, false, RING_OFFSET);//Move to finish pos.(not yet choosen)
 	
+
+	//SOLO AWP MAIN PERMUTATION
+	drive->setState({30.5_in,18.25_in, 180_deg});
+	//starting movement
+	drive->driveToPoint({48_in, 48_in}, true, GOAL_OFFSET);
+	drive->waitUntilSettled();
+	//CLAMP CODE TO GRAB-----------------------------------------------
+	//clamp->waitUntilSettled();//ensuring mogo is secured ------------
+	intakeController->controllerSet(1);//sets intake motor to full speed, scoring the pre-load. 
+	drive->driveToPoint({27.5_in, 68.5_in}, false, RING_OFFSET);//collect and score
+	drive->driveToPoint({20.5_in, 68.5_in}, false, RING_OFFSET);//collect and score
+	drive->driveToPoint({24_in, 48_in}, false, RING_OFFSET);//collect and score
+	drive->driveToPoint({84_in, 36_in}, true, GOAL_OFFSET);//MUST BE REPLACED WITH A CURVE TO POINT-------------------
+	drive->waitUntilSettled();//waiting until we reach the right position 
+	//CLAMP CODE TO DROP-----------------------------------------------
+	//clamp->waitUntilSetted();//ensuring clamp is dropped before we turn
+	drive->driveToPoint({96_in, 48_in}, true, GOAL_OFFSET);
+	drive->waitUntilSettled();
+	//CLAMP CODE TO GRAB-----------------------------------------------
+	//clamp->waitUntilSetted();//ensuring clamp is grabbed before we turn
+	drive->driveToPoint({120_in, 48_in}, false, RING_OFFSET);
+	drive->driveToPoint({72_in, 48_in}, false, RING_OFFSET);
+
 }
 
 /**
@@ -108,6 +185,7 @@ void opcontrol()
 		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
 				(pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
 				(pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
+		cout<<
 
 		drive->getModel()->arcade(controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0,
 					controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0);
