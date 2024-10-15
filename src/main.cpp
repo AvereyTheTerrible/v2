@@ -114,10 +114,14 @@ void autonomous()
 	//CLAMP CODE TO GRAB-----------------------------------------------
 	//clamp->waitUntilSettled();//ensuring mogo is secured ------------
 	intakeController->controllerSet(1);//sets intake motor to full speed, scoring the pre-load.
-	drive->driveToPoint({27_in, 68.5_in}, false, RING_OFFSET);//intake and score
+	drive->driveToPoint({27.5_in, 68.5_in}, false, RING_OFFSET);//intake and score
 	drive->driveToPoint({36_in, 60_in}, true, 0_in);//subject to change for optimization
 	drive->driveToPoint({24_in, 48_in}, false, RING_OFFSET);//intake and score
 	drive->driveToPoint({20.5_in, 68.5_in}, false, RING_OFFSET);//intake and score
+	//the final movement is one of the following two intake-movements. Their consistencies must be compared
+	drive->driveToPoint({0_in, 0_in}, false, RING_OFFSET);//intake and score
+	//drive->driveToPoint({72_in, 24_in}, false, RING_OFFSET);//intake and score(top ring?)
+	
 
 
 
@@ -137,7 +141,7 @@ void autonomous()
 	//clamp->waitUntilSettled();//ensuring mogo is secured ------------
 	intakeController->controllerSet(1);//sets intake motor to full speed, scoring the pre-load.
 	drive->driveToPoint({24_in, 48_in}, false, RING_OFFSET);//intake and score
-	drive->driveToPoint({72_in, 24_in}, false, RING_OFFSET);//THIS PLACES THE BOT ON THE STACKED RINGs. WE NEED TO REPLACE THIS LINE WITH SOMETHING TO SCORE THE TOP RING
+	drive->driveToPoint({72_in, 24_in}, false, RING_OFFSET);//intake and score(TOP RING?)(kinda sketch)
 	//drive->driveToPoint({--_in, --_in}, false, RING_OFFSET);//Move to finish pos.(not yet choosen)
 	
 
@@ -150,8 +154,9 @@ void autonomous()
 	//clamp->waitUntilSettled();//ensuring mogo is secured ------------
 	intakeController->controllerSet(1);//sets intake motor to full speed, scoring the pre-load. 
 	drive->driveToPoint({27.5_in, 68.5_in}, false, RING_OFFSET);//collect and score
-	drive->driveToPoint({20.5_in, 68.5_in}, false, RING_OFFSET);//collect and score
+	drive->driveToPoint({30_in, 60_in}, false, 0_in);//moving back to ensure we dont cross auton line. no object being manipulated, SuBJ  to change
 	drive->driveToPoint({24_in, 48_in}, false, RING_OFFSET);//collect and score
+	drive->driveToPoint({20.5_in, 68.5_in}, false, RING_OFFSET);//collect and score
 	drive->driveToPoint({84_in, 36_in}, true, GOAL_OFFSET);//MUST BE REPLACED WITH A CURVE TO POINT-------------------
 	drive->waitUntilSettled();//waiting until we reach the right position 
 	//CLAMP CODE TO DROP-----------------------------------------------
@@ -161,7 +166,7 @@ void autonomous()
 	//CLAMP CODE TO GRAB-----------------------------------------------
 	//clamp->waitUntilSetted();//ensuring clamp is grabbed before we turn
 	drive->driveToPoint({120_in, 48_in}, false, RING_OFFSET);
-	drive->driveToPoint({72_in, 48_in}, false, RING_OFFSET);
+	drive->driveToPoint({72_in, 48_in}, false, 0_in);//ramming into the cage, subj to change 
 
 }
 
